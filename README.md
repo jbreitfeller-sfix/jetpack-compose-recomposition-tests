@@ -2,7 +2,7 @@
 This project demonstrates the expected / unexpected use cases of what will cause recomposition
 vs what won't. 
 
-#Suggested Usage
+# Suggested Usage
  - Start the app
  - Clear logcat
  - Filter on log tag *******RECOMPOSED
