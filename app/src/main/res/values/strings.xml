@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Recomposition Tests</string>
+    <string name="badge_count">%1$d+</string>
+</resources>
