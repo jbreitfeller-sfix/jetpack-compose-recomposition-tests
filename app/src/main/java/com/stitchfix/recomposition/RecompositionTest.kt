@@ -1,14 +1,23 @@
 package com.stitchfix.recomposition
 
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import com.stitchfix.domain.DomainClass
+import kotlinx.coroutines.launch
 
 private val LOG_TAG = "*******RECOMPOSED"
 
@@ -31,6 +40,7 @@ fun RecompositionTests() {
         LambdaUsingMutableStateTest()
         DomainClassTest()
         UiClassTest()
+        LazyListRecomposition()
     }
 }
 
@@ -80,7 +90,6 @@ private fun StringListColumn(
 }
 
 
-
 @Composable
 private fun TextThatLogsComposition(text: String, onClick: () -> Unit) {
     Log.e(LOG_TAG, text)
@@ -119,5 +128,59 @@ fun UiClassTest() {
     ClassArgComposable(value = UiModuleClass("UiClass")) {
         Log.e(LOG_TAG, "UiComposable is recomposing")
         Text(it.value)
+    }
+}
+
+@Composable
+fun LazyListRecomposition() {
+    Text(
+        text = "Lazy List Tests",
+        modifier = Modifier.fillMaxWidth(),
+        textAlign = TextAlign.Center,
+        fontWeight = FontWeight.Bold,
+        textDecoration = TextDecoration.Underline,
+    )
+
+    Row(Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.weight(1.0f)) {
+            Text("No Derived State", fontWeight = FontWeight.Bold)
+            LazyListTest { listState ->
+                listState.firstVisibleItemIndex > 0
+            }
+        }
+        Column(modifier = Modifier.weight(1.0f)) {
+            Text("Derived State", fontWeight = FontWeight.Bold)
+            LazyListTest { listState ->
+                remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }.value
+            }
+        }
+    }
+}
+
+
+@Composable
+fun LazyListTest(showButtonCallback: @Composable (LazyListState) -> Boolean) {
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val textItems = List(100) { it.toString() }
+
+    val showButton = showButtonCallback(listState)
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(state = listState, modifier = Modifier.fillMaxWidth()) {
+            Log.e("*****", "Recomposing entire list")
+
+            items(textItems) {
+                Text(it)
+            }
+        }
+
+        AnimatedVisibility(
+            modifier = Modifier.align(Alignment.BottomStart),
+            visible = showButton
+        ) {
+            Button(onClick = { scope.launch { listState.scrollToItem(0) } }) {
+                Text("Scroll to top")
+            }
+        }
     }
 }
