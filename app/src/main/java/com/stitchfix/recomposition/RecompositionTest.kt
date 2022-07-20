@@ -23,39 +23,73 @@ private val LOG_TAG = "*******RECOMPOSED"
 
 @Composable
 fun RecompositionTests() {
-    Column {
-        VmTest("ViewModel Lambda Test") {
-            { it.printHi() }
-        }
-        VmTest("Method reference test") {
-            it::printHi
-        }
-        VmTest("Remembered lambda test") {
-            remember { { it.printHi() } }
-        }
-        VmTest("Static function test") {
-            { print() }
-        }
 
+    Column {
+
+        ViewModelLambdaTest()
+        MethodReferenceTest()
+        RememberedLambdaTest()
+        StaticFunctionTest()
         LambdaUsingMutableStateTest()
+
         DomainClassTest()
         UiClassTest()
+
         LazyListRecomposition()
     }
 }
 
 @Composable
-private fun VmTest(
-    buttonText: String,
-    onTextClickFactory: @Composable (StringListViewModel) -> (() -> Unit),
-) {
+private fun ViewModelLambdaTest() {
     val viewModel = remember { StringListViewModel() }
     val state by viewModel.state.collectAsState()
+
     StringListColumn(
         strings = state.strings,
-        buttonName = buttonText,
         onButtonClick = viewModel::updateStrings,
-        onTextClick = onTextClickFactory(viewModel),
+        buttonName = "ViewModel Lambda Test",
+        onTextClick = { viewModel.printHi() }
+    )
+}
+
+@Composable
+private fun MethodReferenceTest() {
+    val viewModel = remember { StringListViewModel() }
+    val state by viewModel.state.collectAsState()
+
+    StringListColumn(
+        strings = state.strings,
+        onButtonClick = viewModel::updateStrings,
+        buttonName = "Method Reference Test",
+        onTextClick = viewModel::printHi
+    )
+}
+
+@Composable
+private fun RememberedLambdaTest() {
+    val viewModel = remember { StringListViewModel() }
+    val state by viewModel.state.collectAsState()
+
+    StringListColumn(
+        strings = state.strings,
+        onButtonClick = viewModel::updateStrings,
+        buttonName = "Remembered Lambda Test",
+        onTextClick = remember { { viewModel.printHi() } }
+    )
+}
+
+
+@Composable
+private fun StaticFunctionTest() {
+
+    val viewModel = remember { StringListViewModel() }
+    val state by viewModel.state.collectAsState()
+
+    StringListColumn(
+        strings = state.strings,
+        onButtonClick = viewModel::updateStrings,
+        buttonName = "Static Function Test",
+        onTextClick = { print() }
     )
 }
 
