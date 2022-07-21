@@ -41,40 +41,40 @@ fun RecompositionTests() {
 
 @Composable
 private fun ViewModelLambdaTest() {
-    val viewModel = remember { StringListViewModel() }
+    val viewModel = remember { NameListViewModel() }
     val state by viewModel.state.collectAsState()
 
-    StringListColumn(
-        strings = state.strings,
-        onButtonClick = viewModel::updateStrings,
+    NameColumnWithButton(
+        strings = state.names,
+        onButtonClick = viewModel::addName,
         buttonName = "ViewModel Lambda Test",
-        onTextClick = { viewModel.printHi() }
+        onTextClick = { viewModel.handleNameClick() }
     )
 }
 
 @Composable
 private fun MethodReferenceTest() {
-    val viewModel = remember { StringListViewModel() }
+    val viewModel = remember { NameListViewModel() }
     val state by viewModel.state.collectAsState()
 
-    StringListColumn(
-        strings = state.strings,
-        onButtonClick = viewModel::updateStrings,
+    NameColumnWithButton(
+        strings = state.names,
+        onButtonClick = viewModel::addName,
         buttonName = "Method Reference Test",
-        onTextClick = viewModel::printHi
+        onTextClick = viewModel::handleNameClick
     )
 }
 
 @Composable
 private fun RememberedLambdaTest() {
-    val viewModel = remember { StringListViewModel() }
+    val viewModel = remember { NameListViewModel() }
     val state by viewModel.state.collectAsState()
 
-    StringListColumn(
-        strings = state.strings,
-        onButtonClick = viewModel::updateStrings,
+    NameColumnWithButton(
+        strings = state.names,
+        onButtonClick = viewModel::addName,
         buttonName = "Remembered Lambda Test",
-        onTextClick = remember { { viewModel.printHi() } }
+        onTextClick = remember { { viewModel.handleNameClick() } }
     )
 }
 
@@ -82,12 +82,12 @@ private fun RememberedLambdaTest() {
 @Composable
 private fun StaticFunctionTest() {
 
-    val viewModel = remember { StringListViewModel() }
+    val viewModel = remember { NameListViewModel() }
     val state by viewModel.state.collectAsState()
 
-    StringListColumn(
-        strings = state.strings,
-        onButtonClick = viewModel::updateStrings,
+    NameColumnWithButton(
+        strings = state.names,
+        onButtonClick = viewModel::addName,
         buttonName = "Static Function Test",
         onTextClick = { print() }
     )
@@ -99,17 +99,17 @@ fun print() {
 
 @Composable
 fun LambdaUsingMutableStateTest() {
-    var state by remember { mutableStateOf(listOf("1", "2", "3")) }
-    StringListColumn(
+    var state by remember { mutableStateOf(listOf("Aaron", "Bob", "Claire")) }
+    NameColumnWithButton(
         strings = state,
-        buttonName = "Recompose lambda using mutable state",
-        onButtonClick = { state = state + "new" },
-        onTextClick = { state = state + "new" },
+        buttonName = "Recompose Lambda Capturing @Stable",
+        onButtonClick = { state = state + "Daisy" },
+        onTextClick = { state = state + "Daisy" },
     )
 }
 
 @Composable
-private fun StringListColumn(
+private fun NameColumnWithButton(
     strings: List<String>,
     buttonName: String,
     onButtonClick: () -> Unit,
@@ -117,7 +117,7 @@ private fun StringListColumn(
 ) {
     Column {
         Row {
-            strings.forEach { TextThatLogsComposition(text = "$it ", onClick = onTextClick) }
+            strings.forEach { CompositionTrackingName(name = "$it ", onClick = onTextClick) }
         }
         Button(onClick = onButtonClick) { Text(buttonName) }
     }
@@ -125,44 +125,54 @@ private fun StringListColumn(
 
 
 @Composable
-private fun TextThatLogsComposition(text: String, onClick: () -> Unit) {
-    Log.e(LOG_TAG, text)
-    Text(text, modifier = Modifier.clickable(onClick = onClick))
+private fun CompositionTrackingName(name: String, onClick: () -> Unit) {
+    Log.e(LOG_TAG, name)
+    Text(name, modifier = Modifier.clickable(onClick = onClick))
 }
 
 @Composable
-fun <T : Any> ClassArgComposable(value: T, content: @Composable (T) -> Unit) {
+fun DomainClassTest() {
+    val domainObject = DomainClass("DomainClass")
     var count by remember { mutableStateOf(1) }
 
     Column {
-        //content() shouldn't recompose when count changes since value isn't changing
-        content(value)
+        //DomainClassText shouldn't recompose when count changes since it isn't changing
+        DomainClassText(domainObject)
         Text("Click Count: $count")
         Button(onClick = { count++ }) {
-            Text("Recompose ${value::class.simpleName} test")
+            Text("Recompose domain module class test")
         }
     }
 }
 
-
 @Composable
-fun DomainClassTest() {
-    ClassArgComposable(value = DomainClass("DomainClass")) {
-        Log.e(LOG_TAG, "DomainComposable is recomposing")
-        Text(it.value)
-    }
+private fun DomainClassText(domainObject: DomainClass) {
+    Log.e(LOG_TAG, "DomainClassText recomposed")
+    Text(domainObject.value)
 }
-
 
 //Exact copy of DomainClass
 data class UiModuleClass(val value: String)
 
 @Composable
 fun UiClassTest() {
-    ClassArgComposable(value = UiModuleClass("UiClass")) {
-        Log.e(LOG_TAG, "UiComposable is recomposing")
-        Text(it.value)
+    val uiModuleObject = UiModuleClass("UiModuleClass")
+    var count by remember { mutableStateOf(1) }
+
+    Column {
+        //UiClassText shouldn't recompose when count changes since it isn't changing
+        UiClassText(uiModuleObject)
+        Text("Click Count: $count")
+        Button(onClick = { count++ }) {
+            Text("Recompose UI module class test")
+        }
     }
+}
+
+@Composable
+private fun UiClassText(uiObject: UiModuleClass) {
+    Log.e(LOG_TAG, "UiClassText recomposed")
+    Text(uiObject.value)
 }
 
 @Composable
@@ -201,7 +211,7 @@ fun LazyListTest(showButtonCallback: @Composable (LazyListState) -> Boolean) {
     val showButton = showButtonCallback(listState)
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(state = listState, modifier = Modifier.fillMaxWidth()) {
-            Log.e("*****", "Recomposing entire list")
+            Log.e(LOG_TAG, "Recomposing entire list")
 
             items(textItems) {
                 Text(it)
