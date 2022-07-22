@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import com.stitchfix.domain.DomainClass
+import com.stitchfix.domain.DomainFullName
 import kotlinx.coroutines.launch
 
 private val LOG_TAG = "*******RECOMPOSED"
@@ -132,12 +132,13 @@ private fun CompositionTrackingName(name: String, onClick: () -> Unit) {
 
 @Composable
 fun DomainClassTest() {
-    val domainObject = DomainClass("DomainClass")
+    val name = remember { DomainFullName("John", "Doe") }
     var count by remember { mutableStateOf(1) }
 
     Column {
-        //DomainClassText shouldn't recompose when count changes since it isn't changing
-        DomainClassText(domainObject)
+        //This shouldn't recompose when count changes since [name] isn't changing
+        //but it does since DomainFullName is not @Stable.
+        NameFromDomainClass(name)
         Text("Click Count: $count")
         Button(onClick = { count++ }) {
             Text("Recompose domain module class test")
@@ -146,22 +147,25 @@ fun DomainClassTest() {
 }
 
 @Composable
-private fun DomainClassText(domainObject: DomainClass) {
-    Log.e(LOG_TAG, "DomainClassText recomposed")
-    Text(domainObject.value)
+private fun NameFromDomainClass(domainObject: DomainFullName) {
+    Log.e(LOG_TAG, "DomainFullName recomposed")
+    Text(domainObject.first + " " + domainObject.last)
 }
 
-//Exact copy of DomainClass
-data class UiModuleClass(val value: String)
+//Compose level state
+data class ComposeFullName(val first: String, val last: String)
+
+fun DomainFullName.toComposeFullName() = ComposeFullName(first = first, last = last)
 
 @Composable
 fun UiClassTest() {
-    val uiModuleObject = UiModuleClass("UiModuleClass")
+    val name = remember { DomainFullName("John", "Doe") }
+    val uiName = remember { name.toComposeFullName() }
     var count by remember { mutableStateOf(1) }
 
     Column {
-        //UiClassText shouldn't recompose when count changes since it isn't changing
-        UiClassText(uiModuleObject)
+        //This shouldn't recompose when count changes since [uiName] isn't changing
+        NameFromComposeModule(uiName)
         Text("Click Count: $count")
         Button(onClick = { count++ }) {
             Text("Recompose UI module class test")
@@ -170,9 +174,9 @@ fun UiClassTest() {
 }
 
 @Composable
-private fun UiClassText(uiObject: UiModuleClass) {
-    Log.e(LOG_TAG, "UiClassText recomposed")
-    Text(uiObject.value)
+private fun NameFromComposeModule(uiObject: ComposeFullName) {
+    Log.e(LOG_TAG, "ComposeFullName recomposed")
+    Text(uiObject.first + " " + uiObject.last)
 }
 
 @Composable
